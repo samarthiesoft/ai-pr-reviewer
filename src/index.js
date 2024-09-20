@@ -69,9 +69,13 @@ async function run() {
     );
     info(`Existing comment: ${summaryComment}`);
 
-    const baseCommitHash = summaryComment
-        ? summaryComment.body.match(/\[Last reviewed commit: (.*)\]/)[1]
-        : context.payload.pull_request.base.sha;
+    let baseCommitHash = context.payload.pull_request.base.sha;
+    if (summaryComment) {
+        const matches = summaryComment.body.match(/\[Last reviewed commit: (.*)\]/);
+        if (matches.length > 1) {
+            baseCommitHash = matches[1]
+        }
+    }
 
     info(
         `Diff between: ${baseCommitHash}..${context.payload.pull_request.head.sha}`
