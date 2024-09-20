@@ -2,4 +2,4 @@ name: "AI Pull Request Reviewer"
 description: "Reviews a pull request with the power of AI"
 runs:
   using: "node20"
-  main: "index.js"
+  main: "./dist/index.js"
