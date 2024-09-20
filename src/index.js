@@ -77,7 +77,7 @@ async function run() {
     const summaryComment = issueComments.findLast((issueComment) =>
         issueComment.body.startsWith("AI Review Summary")
     );
-    info(`Existing comment: ${summaryComment.body}\n\n`);
+    info(`Existing comment: ${summaryComment}\n\n`);
 
     let baseCommitHash = context.payload.pull_request.base.sha;
     if (summaryComment) {
