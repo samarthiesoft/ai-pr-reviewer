@@ -67,7 +67,7 @@ async function run() {
     const summaryComment = issueComments.find((issueComment) =>
         issueComment.body.startsWith("AI Review Summary")
     );
-    info(`Existing comment: ${summaryComment}`);
+    info(`Existing comment: ${summaryComment.body}`);
 
     let baseCommitHash = context.payload.pull_request.base.sha;
     if (summaryComment) {
@@ -96,8 +96,9 @@ async function run() {
 
     const result = await model.generateContent([prompt, diff]);
 
+    const reviewJson = result.response.text();
     const review = JSON.parse(result.response.text());
-    info(`Gemini response: ${review}`);
+    info(`Gemini response: ${reviewJson}`);
 
     // Add the summary as a general comment
     await octokit.issues.createComment({
