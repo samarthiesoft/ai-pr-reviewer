@@ -108,12 +108,22 @@ async function run() {
     info(`Gemini response: ${reviewJson}`);
 
     // Add the summary as a general comment
-    await octokit.issues.createComment({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        issue_number: context.payload.pull_request.number,
-        body: `AI Review Summary\n\n${review.summary}\n\n[Last reviewed commit: ${context.payload.pull_request.head.sha}]`,
-    });
+    const summary = `AI Review Summary\n\n${review.summary}\n\n[Last reviewed commit: ${context.payload.pull_request.head.sha}]`;
+    if (summaryComment) {
+        await octokit.issues.updateComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            comment_id: summaryComment.id,
+            body: summary,
+        });
+    } else {
+        await octokit.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.payload.pull_request.number,
+            body: summary,
+        });
+    }
 
     // Add line-by-line comments
     for (const comment of review.reviewComments) {
