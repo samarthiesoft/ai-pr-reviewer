@@ -57,14 +57,24 @@ const model = genAI.getGenerativeModel({
 });
 
 async function run() {
-    const { data: diff } = await octokit.pulls.get({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: context.payload.pull_request.number,
+    const { data: diff } = await octokit.repos.compareCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        base: context.payload.pull_request.base.sha,
+        head: context.payload.pull_request.head.sha,
         mediaType: {
             format: "diff",
         },
-    });
+      })
+
+    // const { data: diff } = await octokit.pulls.get({
+    //     owner: context.repo.owner,
+    //     repo: context.repo.repo,
+    //     pull_number: context.payload.pull_request.number,
+    //     mediaType: {
+    //         format: "diff",
+    //     },
+    // });
 
     const prompt =
         "Take the following diff for a pull request and review it. Create a short multiline summary. Create line by line review comments and suggestions";
@@ -94,6 +104,28 @@ async function run() {
             line: comment.line,
         });
     }
+}
+
+async function getAllCommitIds(context) {
+    const allCommits = [];
+    let page = 1;
+    let commits;
+    if (context && context.payload && context.payload.pull_request != null) {
+        do {
+            commits = await octokit.pulls.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                per_page: 100,
+                page,
+            });
+
+            allCommits.push(...commits.data.map((commit) => commit.sha));
+            page++;
+        } while (commits.data.length > 0);
+    }
+
+    return allCommits;
 }
 
 run();
