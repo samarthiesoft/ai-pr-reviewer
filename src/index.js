@@ -169,7 +169,9 @@ async function run() {
             body: comment.text,
             commit_id: headCommitHash,
             path: comment.path,
+            start_side: comment.start_side,
             side: comment.side,
+            start_line: comment.start_line,
             line: comment.line,
         });
     }
