@@ -32,7 +32,12 @@ const schema = {
                         description: "Diff side for the comment",
                         nullable: false,
                     },
-                    comment: {
+                    path: {
+                        type: SchemaType.STRING,
+                        description: "Path of the file",
+                        nullable: false,
+                    },
+                    text: {
                         type: SchemaType.STRING,
                         description: "Body of the review comment",
                         nullable: false,
@@ -76,17 +81,19 @@ async function run() {
         body: review.summary,
     });
 
-    // // Add line-by-line comments
-    // for (const comment of lineComments) {
-    //     await octokit.rest.pulls.createComment({
-    //         owner: process.env.GITHUB_REPOSITORY_OWNER,
-    //         repo: process.env.GITHUB_REPOSITORY_NAME,
-    //         pull_number: pullRequestNumber,
-    //         body: comment.text,
-    //         path: comment.path,
-    //         position: comment.position,
-    //     });
-    // }
+    // Add line-by-line comments
+    for (const comment of review.reviewComments) {
+        await octokit.pulls.createReviewComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.pull_request.number,
+            body: comment.text,
+            commit_id: context.payload.pull_request.head.sha,
+            path: comment.path,
+            side: comment.side,
+            line: comment.line,
+        });
+    }
 }
 
 run();
