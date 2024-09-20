@@ -100,7 +100,7 @@ async function run() {
         owner: context.repo.owner,
         repo: context.repo.repo,
         issue_number: context.payload.pull_request.number,
-        body: "AI Review Summary\n\n" + review.summary,
+        body: `AI Review Summary\n\n${nreview.summary}\n\n[Last reviewed commit: ${context.payload.pull_request.head.sha}]`,
     });
 
     // Add line-by-line comments
