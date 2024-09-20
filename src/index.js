@@ -114,7 +114,7 @@ async function run() {
         const result = await model.generateContent([
             "Take the following diff for a pull request and create a summary for the whole pull request stating all the things that were added, removed or changed.",
             completeDiff,
-            "Take the following diff for a commit in the pull request and create line by line review comments and suggestions",
+            "Take the following diff for a commit in the pull request and create line by line review comments along with the file path, line no and the side",
             diff,
         ]);
         const reviewJson = result.response.text();
@@ -123,7 +123,7 @@ async function run() {
         review = JSON.parse(result.response.text());
     } else {
         const result = await model.generateContent([
-            "Take the following diff for a pull request and review it. Create a short multiline summary. Create line by line review comments and suggestions.",
+            "Take the following diff for a pull request and review it. Create a short multiline summary. Create line by line review comments along with the file path, line no and the side.",
             diff,
         ]);
         const reviewJson = result.response.text();
