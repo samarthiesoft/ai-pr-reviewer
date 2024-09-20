@@ -1,6 +1,7 @@
 const { Octokit } = require("@octokit/rest");
 const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const { context } = require("@actions/github");
+const { info } = require("@actions/core");
 
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
@@ -58,14 +59,15 @@ const model = genAI.getGenerativeModel({
 
 async function run() {
     const { data: diff } = await octokit.repos.compareCommits({
-        owner: repo.owner,
-        repo: repo.repo,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
         base: context.payload.pull_request.base.sha,
         head: context.payload.pull_request.head.sha,
         mediaType: {
             format: "diff",
         },
-      })
+    });
+    info(`Diff: ${diff}`)
 
     // const { data: diff } = await octokit.pulls.get({
     //     owner: context.repo.owner,
@@ -82,6 +84,7 @@ async function run() {
     const result = await model.generateContent([prompt, diff]);
 
     const review = JSON.parse(result.response.text());
+    info(`Gemini response: ${review}`)
 
     // Add the summary as a general comment
     await octokit.issues.createComment({
