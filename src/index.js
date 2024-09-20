@@ -1,4 +1,4 @@
-const { Octokit } = require("@octokit/core");
+const { Octokit } = require("@octokit/rest");
 const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const { context } = require("@actions/github");
 
@@ -52,7 +52,7 @@ const model = genAI.getGenerativeModel({
 });
 
 async function run() {
-    const { data: diff } = await octokit.rest.pulls.get({
+    const { data: diff } = await octokit.pulls.get({
         owner: context.repo.owner,
         repo: context.repo.repo,
         pull_number: context.payload.pull_request.number,
@@ -69,7 +69,7 @@ async function run() {
     const review = JSON.parse(result.response.text());
 
     // Add the summary as a general comment
-    await octokit.rest.issues.createComment({
+    await octokit.issues.createComment({
         owner: context.repo.owner,
         repo: context.repo.repo,
         issue_number: context.payload.pull_request.number,
