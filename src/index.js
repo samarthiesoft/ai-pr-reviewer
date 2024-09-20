@@ -1,7 +1,7 @@
 const { Octokit } = require("@octokit/rest");
 const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const { context } = require("@actions/github");
-const { info, warn } = require("@actions/core");
+const { info, warning } = require("@actions/core");
 
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
@@ -80,7 +80,7 @@ async function run() {
     }
 
     if (baseCommitHash == context.payload.pull_request.head.sha) {
-        warn("No new commits to review");
+        warning("No new commits to review");
         return;
     }
 
