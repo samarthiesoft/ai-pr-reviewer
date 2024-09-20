@@ -109,7 +109,7 @@ async function run() {
                 format: "diff",
             },
         });
-        info(`Complete Diff: ${diff}\n\n`);
+        info(`Complete Diff: ${completeDiff}\n\n`);
 
         const result = await model.generateContent([
             "Take the following diff for a pull request and create a summary for the whole pull request stating all the things that were added, removed or changed.",
