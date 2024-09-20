@@ -114,7 +114,7 @@ async function run() {
         const result = await model.generateContent([
             "Review the following diff for a pull request. Generate a descriptive summary listing all the changes.",
             completeDiff,
-            "Review the following diff for a commit in the pull request. Generate line by line suggestions as review comments according to coding best practices including the line number, diff side and path for review comments.",
+            "Review the following diff for a commit in the pull request. Generate line by line suggestions as review comments according to coding best practices including the following things: line number, diff side, file path",
             diff,
         ]);
         const reviewJson = result.response.text();
@@ -123,7 +123,7 @@ async function run() {
         review = JSON.parse(result.response.text());
     } else {
         const result = await model.generateContent([
-            "Review the following diff for a pull request. Generate a descriptive summary listing all the changes. Also generate line by line suggestions as review comments according to coding best practices including the line number, diff side and path for review comments.",
+            "Review the following diff for a pull request. Generate a descriptive summary listing all the changes. Also generate line by line suggestions as review comments according to coding best practices including the following things: line number, diff side, file path",
             diff,
         ]);
         const reviewJson = result.response.text();
@@ -159,9 +159,7 @@ async function run() {
             body: comment.text,
             commit_id: headCommitHash,
             path: comment.path,
-            // start_side: comment.start_side,
             side: comment.side,
-            // start_line: comment.start_line,
             line: comment.line,
         });
     }
