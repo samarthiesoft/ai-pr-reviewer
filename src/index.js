@@ -99,14 +99,38 @@ async function run() {
     });
     info(`Diff: ${diff}`);
 
-    const prompt =
-        "Take the following diff for a pull request and review it. Create a short multiline summary. Create line by line review comments and suggestions";
+    let review;
+    if (summaryComment) {
+        const { data: completeDiff } = await octokit.repos.compareCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            base: baseCommitHash,
+            head: headCommitHash,
+            mediaType: {
+                format: "diff",
+            },
+        });
 
-    const result = await model.generateContent([prompt, diff]);
+        const result = await model.generateContent([
+            "Take the following diff for a pull request and create a short multiline summary for the pull request.",
+            completeDiff,
+            "Take the following diff for a commit in the pull request and create line by line review comments and suggestions",
+            diff,
+        ]);
+        const reviewJson = result.response.text();
+        info(`Gemini response: ${reviewJson}`);
 
-    const reviewJson = result.response.text();
-    const review = JSON.parse(result.response.text());
-    info(`Gemini response: ${reviewJson}`);
+        review = JSON.parse(result.response.text());
+    } else {
+        const result = await model.generateContent([
+            "Take the following diff for a pull request and review it. Create a short multiline summary. Create line by line review comments and suggestions.",
+            diff,
+        ]);
+        const reviewJson = result.response.text();
+        info(`Gemini response: ${reviewJson}`);
+
+        review = JSON.parse(result.response.text());
+    }
 
     // Add the summary as a general comment
     const summary = `AI Review Summary\n\n${review.summary}\n\n[Last reviewed commit: ${headCommitHash}]`;
