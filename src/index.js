@@ -79,8 +79,8 @@ async function run() {
         }
     }
 
-    const commits = await getAllCommitIds(context);
-    const headCommitHash = commits[commits.length - 1].sha;
+    const commitIds = await getAllCommitIds(context);
+    const headCommitHash = commitIds[commitIds.length - 1];
 
     if (baseCommitHash == headCommitHash) {
         warning("No new commits to review");
