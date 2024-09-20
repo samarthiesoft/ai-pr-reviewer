@@ -72,7 +72,7 @@ async function run() {
     let baseCommitHash = context.payload.pull_request.base.sha;
     if (summaryComment) {
         const matches = summaryComment.body.match(/\[Last reviewed commit: (.*)\]/);
-        if (matches.length > 1) {
+        if (matches && matches.length > 1) {
             baseCommitHash = matches[1]
         }
     }
