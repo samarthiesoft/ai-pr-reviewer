@@ -79,11 +79,11 @@ async function run() {
         }
     }
 
+    info(
+        `head: ${context.payload.pull_request.head.sha}, base: ${context.payload.pull_request.base.sha}`
+    );
     if (baseCommitHash == context.payload.pull_request.head.sha) {
         warning("No new commits to review");
-        info(
-            `head: ${context.payload.pull_request.head.sha}, base: ${context.payload.pull_request.base.sha}`
-        );
         return;
     }
 
