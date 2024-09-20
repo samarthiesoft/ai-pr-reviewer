@@ -67,7 +67,7 @@ async function run() {
     const summaryComment = issueComments.findLast((issueComment) =>
         issueComment.body.startsWith("AI Review Summary")
     );
-    info(`Existing comment: ${summaryComment.body}`);
+    info(`Existing comment: ${summaryComment.body}\n\n`);
 
     let baseCommitHash = context.payload.pull_request.base.sha;
     if (summaryComment) {
@@ -97,7 +97,7 @@ async function run() {
             format: "diff",
         },
     });
-    info(`Diff: ${diff}`);
+    info(`Diff: ${diff}\n\n`);
 
     let review;
     if (summaryComment) {
@@ -109,7 +109,7 @@ async function run() {
                 format: "diff",
             },
         });
-        info(`Complete Diff: ${diff}`);
+        info(`Complete Diff: ${diff}\n\n`);
 
         const result = await model.generateContent([
             "Take the following diff for a pull request and create a summary for the whole pull request stating all the things that were added, removed or changed.",
@@ -118,7 +118,7 @@ async function run() {
             diff,
         ]);
         const reviewJson = result.response.text();
-        info(`Gemini response: ${reviewJson}`);
+        info(`Gemini response: ${reviewJson}\n\n`);
 
         review = JSON.parse(result.response.text());
     } else {
@@ -127,7 +127,7 @@ async function run() {
             diff,
         ]);
         const reviewJson = result.response.text();
-        info(`Gemini response: ${reviewJson}`);
+        info(`Gemini response: ${reviewJson}\n\n`);
 
         review = JSON.parse(result.response.text());
     }
