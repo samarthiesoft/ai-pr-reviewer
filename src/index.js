@@ -101,11 +101,10 @@ async function run() {
 
     let review;
     if (summaryComment) {
-        const { data: completeDiff } = await octokit.repos.compareCommits({
+        const { data: completeDiff } = await octokit.pulls.get({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            base: baseCommitHash,
-            head: headCommitHash,
+            pull_number: context.payload.pull_request.number,
             mediaType: {
                 format: "diff",
             },
