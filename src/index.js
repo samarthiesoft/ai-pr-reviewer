@@ -1,7 +1,7 @@
 const { Octokit } = require("@octokit/rest");
 const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const { context } = require("@actions/github");
-const { info } = require("@actions/core");
+const { info, warn } = require("@actions/core");
 
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
@@ -71,10 +71,17 @@ async function run() {
 
     let baseCommitHash = context.payload.pull_request.base.sha;
     if (summaryComment) {
-        const matches = summaryComment.body.match(/\[Last reviewed commit: (.*)\]/);
+        const matches = summaryComment.body.match(
+            /\[Last reviewed commit: (.*)\]/
+        );
         if (matches && matches.length > 1) {
-            baseCommitHash = matches[1]
+            baseCommitHash = matches[1];
         }
+    }
+
+    if (baseCommitHash == context.payload.pull_request.head.sha) {
+        warn("No new commits to review");
+        return;
     }
 
     info(
