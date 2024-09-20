@@ -64,7 +64,7 @@ async function run() {
         issue_number: context.payload.pull_request.number,
         per_page: 25,
     });
-    const summaryComment = issueComments.find((issueComment) =>
+    const summaryComment = issueComments.findLast((issueComment) =>
         issueComment.body.startsWith("AI Review Summary")
     );
     info(`Existing comment: ${summaryComment.body}`);
