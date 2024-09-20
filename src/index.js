@@ -79,22 +79,20 @@ async function run() {
         }
     }
 
-    info(
-        `head: ${context.payload.pull_request.head.sha}, base: ${context.payload.pull_request.base.sha}`
-    );
-    if (baseCommitHash == context.payload.pull_request.head.sha) {
+    const commits = await getAllCommitIds(context);
+    const headCommitHash = commits[commits.length - 1].sha;
+
+    if (baseCommitHash == headCommitHash) {
         warning("No new commits to review");
         return;
     }
 
-    info(
-        `Diff between: ${baseCommitHash}..${context.payload.pull_request.head.sha}`
-    );
+    info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
     const { data: diff } = await octokit.repos.compareCommits({
         owner: context.repo.owner,
         repo: context.repo.repo,
         base: baseCommitHash,
-        head: context.payload.pull_request.head.sha,
+        head: headCommitHash,
         mediaType: {
             format: "diff",
         },
@@ -111,7 +109,7 @@ async function run() {
     info(`Gemini response: ${reviewJson}`);
 
     // Add the summary as a general comment
-    const summary = `AI Review Summary\n\n${review.summary}\n\n[Last reviewed commit: ${context.payload.pull_request.head.sha}]`;
+    const summary = `AI Review Summary\n\n${review.summary}\n\n[Last reviewed commit: ${headCommitHash}]`;
     if (summaryComment) {
         await octokit.issues.updateComment({
             owner: context.repo.owner,
@@ -135,7 +133,7 @@ async function run() {
             repo: context.repo.repo,
             pull_number: context.payload.pull_request.number,
             body: comment.text,
-            commit_id: context.payload.pull_request.head.sha,
+            commit_id: headCommitHash,
             path: comment.path,
             side: comment.side,
             line: comment.line,
