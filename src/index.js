@@ -2,6 +2,7 @@ const { Octokit } = require("@octokit/rest");
 const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
+const fs = require("fs");
 
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
@@ -58,6 +59,11 @@ const model = genAI.getGenerativeModel({
 });
 
 async function run() {
+    fs.readdirSync(process.env.GITHUB_WORKSPACE).forEach((file) => {
+        info(file);
+    });
+    return;
+
     const { data: issueComments } = await octokit.issues.listComments({
         owner: context.repo.owner,
         repo: context.repo.repo,
