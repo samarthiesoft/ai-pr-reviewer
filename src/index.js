@@ -27,24 +27,34 @@ const schema = {
             items: {
                 type: SchemaType.OBJECT,
                 properties: {
+                    start_line: {
+                        type: SchemaType.NUMBER,
+                        description: "starting line number for a comment",
+                        nullable: false,
+                    },
                     line: {
                         type: SchemaType.NUMBER,
-                        description: "Line number for the review comment",
+                        description: "ending line number for a comment",
+                        nullable: false,
+                    },
+                    start_side: {
+                        type: SchemaType.STRING,
+                        description: "starting diff side for a comment",
                         nullable: false,
                     },
                     side: {
                         type: SchemaType.STRING,
-                        description: "Diff side for the comment",
+                        description: "ending diff side for a comment",
                         nullable: false,
                     },
                     path: {
                         type: SchemaType.STRING,
-                        description: "Path of the file",
+                        description: "path to the file that is being reviewed",
                         nullable: false,
                     },
                     text: {
                         type: SchemaType.STRING,
-                        description: "Body of the review comment",
+                        description: "main body of the comment",
                         nullable: false,
                     },
                 },
@@ -126,7 +136,15 @@ async function run() {
         const result = await model.generateContent([
             "Review the following diff for a pull request. Generate a descriptive summary listing all the changes.",
             completeDiff,
-            "Review the following diff for a commit in the pull request. Generate line by line suggestions as review comments according to coding best practices including the following things: line number, diff side. Also include the file path in each suggestion",
+            `Review the following diff for a commit in the above pull request.
+Generate line by line suggestions as review comments according to coding best practices.
+Include the following things for each review comment
+1. start_line: starting line number for a comment
+2. line: ending line number for a comment
+3. start_side: starting diff side for a comment
+4. side: ending diff side for a comment
+5. path: path to the file that is being reviewed
+6. text: main body of the comment`,
             diff,
         ]);
         const reviewJson = result.response.text();
@@ -135,7 +153,15 @@ async function run() {
         review = JSON.parse(result.response.text());
     } else {
         const result = await model.generateContent([
-            "Review the following diff for a pull request. Generate a descriptive summary listing all the changes. Also generate line by line suggestions as review comments according to coding best practices including the following things: line number, diff side. Also include the file path in each suggestion",
+            `Review the following diff for a pull request. Generate a descriptive summary listing all the changes.
+Also generate line by line suggestions as review comments according to coding best practices.
+Include the following things for each review comment
+1. start_line: starting line number for a comment
+2. line: ending line number for a comment
+3. start_side: starting diff side for a comment
+4. side: ending diff side for a comment
+5. path: path to the file that is being reviewed
+6. text: main body of the comment`,
             diff,
         ]);
         const reviewJson = result.response.text();
