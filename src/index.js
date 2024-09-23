@@ -5,6 +5,8 @@ const { info, warning } = require("@actions/core");
 const shell = require("shelljs");
 const fs = require("fs");
 
+shell.cd(process.env.GITHUB_WORKSPACE);
+
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
 });
@@ -84,41 +86,37 @@ async function run() {
     const commitIds = await getAllCommitIds(context);
     const headCommitHash = commitIds[commitIds.length - 1];
 
-    shell.cd(process.env.GITHUB_WORKSPACE);
-    info(
-        shell.exec(
-            `git diff -W ${context.payload.pull_request.base.sha}..${headCommitHash}`
-        )
-    );
-    return;
-
     if (baseCommitHash == headCommitHash) {
         warning("No new commits to review");
         return;
     }
 
     info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
-    const { data: diff } = await octokit.repos.compareCommits({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        base: baseCommitHash,
-        head: headCommitHash,
-        mediaType: {
-            format: "diff",
-        },
-    });
+    const diff = shell.exec(`git diff -W ${baseCommitHash}..${headCommitHash}`);
+    // const { data: diff } = await octokit.repos.compareCommits({
+    //     owner: context.repo.owner,
+    //     repo: context.repo.repo,
+    //     base: baseCommitHash,
+    //     head: headCommitHash,
+    //     mediaType: {
+    //         format: "diff",
+    //     },
+    // });
     info(`Diff: ${diff}\n\n`);
 
     let review;
     if (summaryComment) {
-        const { data: completeDiff } = await octokit.pulls.get({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            pull_number: context.payload.pull_request.number,
-            mediaType: {
-                format: "diff",
-            },
-        });
+        const completeDiff = shell.exec(
+            `git diff -W ${context.payload.pull_request.base.sha}..${headCommitHash}`
+        );
+        // const { data: completeDiff } = await octokit.pulls.get({
+        //     owner: context.repo.owner,
+        //     repo: context.repo.repo,
+        //     pull_number: context.payload.pull_request.number,
+        //     mediaType: {
+        //         format: "diff",
+        //     },
+        // });
         info(`Complete Diff: ${completeDiff}\n\n`);
 
         const result = await model.generateContent([
