@@ -92,7 +92,9 @@ async function run() {
     }
 
     info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
-    const diff = shell.exec(`git diff -W ${baseCommitHash}..${headCommitHash}`);
+    const diff = shell
+        .exec(`git diff -W ${baseCommitHash}..${headCommitHash}`)
+        .toString();
     // const { data: diff } = await octokit.repos.compareCommits({
     //     owner: context.repo.owner,
     //     repo: context.repo.repo,
@@ -106,9 +108,11 @@ async function run() {
 
     let review;
     if (summaryComment) {
-        const completeDiff = shell.exec(
-            `git diff -W ${context.payload.pull_request.base.sha}..${headCommitHash}`
-        );
+        const completeDiff = shell
+            .exec(
+                `git diff -W ${context.payload.pull_request.base.sha}..${headCommitHash}`
+            )
+            .toString();
         // const { data: completeDiff } = await octokit.pulls.get({
         //     owner: context.repo.owner,
         //     repo: context.repo.repo,
