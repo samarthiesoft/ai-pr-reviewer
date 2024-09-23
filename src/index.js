@@ -2,6 +2,7 @@ const { Octokit } = require("@octokit/rest");
 const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
+const shell = require("shelljs");
 const fs = require("fs");
 
 const octokit = new Octokit({
@@ -59,11 +60,6 @@ const model = genAI.getGenerativeModel({
 });
 
 async function run() {
-    fs.readdirSync(process.env.GITHUB_WORKSPACE).forEach((file) => {
-        info(file);
-    });
-    return;
-
     const { data: issueComments } = await octokit.issues.listComments({
         owner: context.repo.owner,
         repo: context.repo.repo,
@@ -87,6 +83,14 @@ async function run() {
 
     const commitIds = await getAllCommitIds(context);
     const headCommitHash = commitIds[commitIds.length - 1];
+
+    shell.cd(process.env.GITHUB_WORKSPACE);
+    info(
+        shell.exec(
+            `git diff -W ${context.payload.pull_request.base.sha}..${headCommitHash}`
+        )
+    );
+    return;
 
     if (baseCommitHash == headCommitHash) {
         warning("No new commits to review");
