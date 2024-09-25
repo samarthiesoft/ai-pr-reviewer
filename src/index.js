@@ -221,7 +221,8 @@ The lines with a , are unmodified`,
         info(`Gemini response stream:\n`);
         let reviewJson = "";
         for await (const chunk of result.stream) {
-            reviewJson += chunk.text();
+            const chunkText = chunk.text();
+            reviewJson += chunkText;
             info(chunkText);
         }
 
@@ -241,7 +242,8 @@ The lines with a , are unmodified`,
         info(`Gemini response stream:\n`);
         let reviewJson = "";
         for await (const chunk of result.stream) {
-            reviewJson += chunk.text();
+            const chunkText = chunk.text();
+            reviewJson += chunkText;
             info(chunkText);
         }
 
