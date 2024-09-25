@@ -270,7 +270,7 @@ The lines with a , are unmodified`,
 
     // Add line-by-line comments
     for (const comment of review) {
-        await octokit.pulls.createReviewComment({
+        let requestData = {
             owner: context.repo.owner,
             repo: context.repo.repo,
             pull_number: context.payload.pull_request.number,
@@ -278,9 +278,14 @@ The lines with a , are unmodified`,
             commit_id: headCommitHash,
             path: comment.filename,
             side: comment.side,
-            start_line: comment.from_line,
             line: comment.to_line,
-        });
+        };
+
+        if (comment.from_line < comment.to_line) {
+            requestData.start_line = comment.from_line;
+        }
+
+        await octokit.pulls.createReviewComment(requestData);
     }
 }
 
