@@ -1,5 +1,10 @@
 const { Octokit } = require("@octokit/rest");
-const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
+const {
+    GoogleGenerativeAI,
+    SchemaType,
+    HarmCategory,
+    HarmBlockThreshold,
+} = require("@google/generative-ai");
 const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
 const shell = require("shelljs");
@@ -63,7 +68,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 //     },
 // };
 
-const suggestionsSchema = {
+const schema = {
     type: SchemaType.ARRAY,
     description: "Pull request review",
     items: {
@@ -98,8 +103,32 @@ const suggestionsSchema = {
     },
 };
 
+const safetySettings = [
+    {
+        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+];
+
 const model = genAI.getGenerativeModel({
     model: "gemini-1.5-pro",
+    safetySettings: safetySettings,
+    generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+    },
 });
 
 async function run() {
@@ -134,7 +163,8 @@ async function run() {
 
     info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
     const diff = shell
-        .exec(`git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
+        .exec(
+            `git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
 match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
     left=a[1]
     ll=length(a[2])
@@ -146,7 +176,8 @@ match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
 /^[-]/{ printf "-%"ll"s %"rl"s:%s\\n",left++,""     ,line;next }
 /^[+]/{ printf "+%"ll"s %"rl"s:%s\\n",""    ,right++,line;next }
         { printf " %"ll"s %"rl"s:%s\\n",left++,right++,line }
-'`)
+'`
+        )
         .toString();
     // const { data: diff } = await octokit.repos.compareCommits({
     //     owner: context.repo.owner,
@@ -185,36 +216,22 @@ The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
             diff,
-            {
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: suggestionsSchema,
-                },
-            },
         ]);
         const reviewJson = result.response.text();
         info(`Gemini response: ${reviewJson}\n\n`);
 
         review = JSON.parse(result.response.text());
     } else {
-        const result = await model.generateContentStream(
-            [
-                `Here is a diff for a pull request in a project that uses node.js. 
+        const result = await model.generateContentStream([
+            `Here is a diff for a pull request in a project that uses node.js. 
 Kindly review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
-                diff,
-            ],
-            {
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: suggestionsSchema,
-                },
-            }
-        );
+            diff,
+        ]);
         const reviewJson = result.response.text();
         info(`Gemini response: ${reviewJson}\n\n`);
 
