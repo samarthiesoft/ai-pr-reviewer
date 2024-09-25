@@ -222,7 +222,7 @@ The lines with a , are unmodified`,
 
         review = JSON.parse(result.response.text());
     } else {
-        const result = await model.generateContentStream([
+        const result = await model.generateContent([
             `Here is a diff for a pull request in a project that uses node.js. 
 Kindly review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
