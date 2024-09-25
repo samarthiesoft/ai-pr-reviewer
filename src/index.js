@@ -207,7 +207,7 @@ match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
         // });
         // info(`Complete Diff: ${completeDiff}\n\n`);
 
-        const result = await model.generateContent([
+        const result = await model.generateContentStream([
             `Here is a diff for a pull request in a project that uses node.js. 
 Kindly review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
@@ -217,12 +217,17 @@ The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
             diff,
         ]);
-        const reviewJson = result.response.text();
-        info(`Gemini response: ${reviewJson}\n\n`);
 
-        review = JSON.parse(result.response.text());
+        info(`Gemini response stream:\n`);
+        let reviewJson = "";
+        for await (const chunk of result.stream) {
+            reviewJson += chunk.text();
+            info(chunkText);
+        }
+
+        review = JSON.parse(reviewJson);
     } else {
-        const result = await model.generateContent([
+        const result = await model.generateContentStream([
             `Here is a diff for a pull request in a project that uses node.js. 
 Kindly review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
@@ -232,10 +237,15 @@ The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
             diff,
         ]);
-        const reviewJson = result.response.text();
-        info(`Gemini response: ${reviewJson}\n\n`);
 
-        review = JSON.parse(result.response.text());
+        info(`Gemini response stream:\n`);
+        let reviewJson = "";
+        for await (const chunk of result.stream) {
+            reviewJson += chunk.text();
+            info(chunkText);
+        }
+
+        review = JSON.parse(reviewJson);
     }
 
     // Add the summary as a general comment
