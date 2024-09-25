@@ -277,10 +277,9 @@ The lines with a , are unmodified`,
             body: comment.text,
             commit_id: headCommitHash,
             path: comment.filename,
-            start_side: comment.side,
             side: comment.side,
-            start_line: comment.line_from,
-            line: comment.line_to,
+            start_line: comment.from_line,
+            line: comment.to_line,
         });
     }
 }
