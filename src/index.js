@@ -138,14 +138,14 @@ async function run() {
     info(`Existing comment: ${summaryComment}\n\n`);
 
     let baseCommitHash = context.payload.pull_request.base.sha;
-    if (summaryComment) {
-        const matches = summaryComment.body.match(
-            /\[Last reviewed commit: (.*)\]/
-        );
-        if (matches && matches.length > 1) {
-            baseCommitHash = matches[1];
-        }
-    }
+    // if (summaryComment) {
+    //     const matches = summaryComment.body.match(
+    //         /\[Last reviewed commit: (.*)\]/
+    //     );
+    //     if (matches && matches.length > 1) {
+    //         baseCommitHash = matches[1];
+    //     }
+    // }
 
     const commitIds = await getAllCommitIds(context);
     const headCommitHash = commitIds[commitIds.length - 1];
