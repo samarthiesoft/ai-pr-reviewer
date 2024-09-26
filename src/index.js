@@ -174,11 +174,13 @@ While suggesting the changes kindly mention the from_line and to_line and the fi
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
-The lines with a , are unmodified`,
-            diff,
+The lines with a , are unmodified
+
+${diff}`,
             `Following is a diff for the complete pull request in a project that uses node.js.
-Review all the changes and create a summary of all the changes as a list.`,
-            completeDiff,
+Review all the changes and create a summary of all the changes as a list.
+
+${completeDiff}`,
         ]);
 
         info(`Gemini response stream:\n`);
