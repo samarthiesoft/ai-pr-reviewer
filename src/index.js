@@ -285,7 +285,7 @@ async function getAllCommitIds(context) {
 }
 
 function commitsDiff(baseCommitHash, headCommitHash) {
-    shell
+    return shell
         .exec(
             `git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
 match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
