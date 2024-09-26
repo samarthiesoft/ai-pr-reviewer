@@ -138,22 +138,22 @@ async function run() {
     info(`Existing comment: ${summaryComment}\n\n`);
 
     let baseCommitHash = context.payload.pull_request.base.sha;
-    // if (summaryComment) {
-    //     const matches = summaryComment.body.match(
-    //         /\[Last reviewed commit: (.*)\]/
-    //     );
-    //     if (matches && matches.length > 1) {
-    //         baseCommitHash = matches[1];
-    //     }
-    // }
+    if (summaryComment) {
+        const matches = summaryComment.body.match(
+            /\[Last reviewed commit: (.*)\]/
+        );
+        if (matches && matches.length > 1) {
+            baseCommitHash = matches[1];
+        }
+    }
 
     const commitIds = await getAllCommitIds(context);
     const headCommitHash = commitIds[commitIds.length - 1];
 
-    // if (baseCommitHash == headCommitHash) {
-    //     warning("No new commits to review");
-    //     return;
-    // }
+    if (baseCommitHash == headCommitHash) {
+        warning("No new commits to review");
+        return;
+    }
 
     info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
     const diff = commitsDiff(baseCommitHash, headCommitHash);
@@ -161,20 +161,11 @@ async function run() {
 
     let review;
     if (summaryComment) {
-        // const completeDiff = shell
-        //     .exec(
-        //         `git diff -W ${context.payload.pull_request.base.sha}..${headCommitHash}`
-        //     )
-        //     .toString();
-        // const { data: completeDiff } = await octokit.pulls.get({
-        //     owner: context.repo.owner,
-        //     repo: context.repo.repo,
-        //     pull_number: context.payload.pull_request.number,
-        //     mediaType: {
-        //         format: "diff",
-        //     },
-        // });
-        // info(`Complete Diff: ${completeDiff}\n\n`);
+        const completeDiff = commitsDiff(
+            context.payload.pull_request.base.sha,
+            headCommitHash
+        );
+        info(`Complete Diff: ${completeDiff}\n\n`);
 
         const result = await model.generateContentStream([
             `Here is a diff for a pull request in a project that uses node.js.
@@ -183,10 +174,11 @@ While suggesting the changes kindly mention the from_line and to_line and the fi
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
-The lines with a , are unmodified
-
-Also create a summary of all the changes that are part of this PR.`,
+The lines with a , are unmodified`,
             diff,
+            `Following is a diff for the complete pull request in a project that uses node.js.
+Review all the changes and create a summary of all the changes as a list.`,
+            completeDiff,
         ]);
 
         info(`Gemini response stream:\n`);
