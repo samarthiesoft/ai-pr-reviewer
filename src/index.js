@@ -150,10 +150,10 @@ async function run() {
     const commitIds = await getAllCommitIds(context);
     const headCommitHash = commitIds[commitIds.length - 1];
 
-    if (baseCommitHash == headCommitHash) {
-        warning("No new commits to review");
-        return;
-    }
+    // if (baseCommitHash == headCommitHash) {
+    //     warning("No new commits to review");
+    //     return;
+    // }
 
     info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
     const diff = commitsDiff(baseCommitHash, headCommitHash);
