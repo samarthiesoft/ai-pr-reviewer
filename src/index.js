@@ -207,7 +207,7 @@ async function getAllCommitIds(context) {
 function commitsDiff(baseCommitHash, headCommitHash) {
     return shell
         .exec(
-            `git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
+            `cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
 match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
     left=a[1]
     ll=length(a[2])
