@@ -19,11 +19,6 @@ const octokit = new Octokit({
 const GEMINI_OUTPUT_SCHEMA = {
     type: SchemaType.OBJECT,
     properties: {
-        summary: {
-            type: SchemaType.STRING,
-            description: "Summary of the pull request",
-            nullable: false,
-        },
         suggestions: {
             type: SchemaType.ARRAY,
             description: "Code suggestions",
@@ -57,6 +52,11 @@ const GEMINI_OUTPUT_SCHEMA = {
                     },
                 },
             },
+        },
+        summary: {
+            type: SchemaType.STRING,
+            description: "Summary of the pull request",
+            nullable: false,
         },
     },
 };
