@@ -218,8 +218,8 @@ match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
 
 async function getSummaryStream(diff) {
     return await summaryModel.generateContentStream([
-        `Here is a diff for a pull request in a project that uses node.js. 
-Review the code and create a summary that includes an overview of al the changes made in the PR.
+        `Here is a diff for a pull request in a project. 
+Review the code and create a summary that includes a high level overview of all the changes made in the PR.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
@@ -229,7 +229,7 @@ The lines with a , are unmodified`,
 
 async function getSuggestionsStream(diff) {
     return await suggestionsModel.generateContentStream([
-        `Here is a diff for a pull request in a project that uses node.js. 
+        `Here is a diff for a pull request in a project. 
 Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
