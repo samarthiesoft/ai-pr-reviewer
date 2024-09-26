@@ -16,92 +16,85 @@ const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
 });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// const schema = {
-//     type: SchemaType.OBJECT,
-//     properties: {
-//         summary: {
-//             type: SchemaType.STRING,
-//             description: "Summary of the pull request",
-//             nullable: false,
-//         },
-//         reviewComments: {
-//             type: SchemaType.ARRAY,
-//             description: "Pull request review",
-//             items: {
-//                 type: SchemaType.OBJECT,
-//                 properties: {
-//                     start_line: {
-//                         type: SchemaType.NUMBER,
-//                         description: "starting line number for a comment",
-//                         nullable: false,
-//                     },
-//                     line: {
-//                         type: SchemaType.NUMBER,
-//                         description: "ending line number for a comment",
-//                         nullable: false,
-//                     },
-//                     start_side: {
-//                         type: SchemaType.STRING,
-//                         description: "starting diff side for a comment",
-//                         nullable: false,
-//                     },
-//                     side: {
-//                         type: SchemaType.STRING,
-//                         description: "ending diff side for a comment",
-//                         nullable: false,
-//                     },
-//                     path: {
-//                         type: SchemaType.STRING,
-//                         description: "path to the file that is being reviewed",
-//                         nullable: false,
-//                     },
-//                     text: {
-//                         type: SchemaType.STRING,
-//                         description: "main body of the comment",
-//                         nullable: false,
-//                     },
-//                 },
-//             },
-//         },
-//     },
-// };
-
-const schema = {
-    type: SchemaType.ARRAY,
-    description: "Pull request review",
-    items: {
-        type: SchemaType.OBJECT,
-        properties: {
-            from_line: {
-                type: SchemaType.NUMBER,
-                description: "code line number where the review starts",
-                nullable: false,
-            },
-            to_line: {
-                type: SchemaType.NUMBER,
-                description: "code line number where the review ends",
-                nullable: false,
-            },
-            side: {
-                type: SchemaType.STRING,
-                description: "side of the diff",
-                nullable: false,
-            },
-            filename: {
-                type: SchemaType.STRING,
-                description: "name of the file",
-                nullable: false,
-            },
-            text: {
-                type: SchemaType.STRING,
-                description: "main body of the suggestion",
-                nullable: false,
+const GEMINI_OUTPUT_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        summary: {
+            type: SchemaType.STRING,
+            description: "Summary of the pull request",
+            nullable: false,
+        },
+        suggestions: {
+            type: SchemaType.ARRAY,
+            description: "Code suggestions",
+            items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    from_line: {
+                        type: SchemaType.NUMBER,
+                        description: "Code line number where the review starts",
+                        nullable: false,
+                    },
+                    to_line: {
+                        type: SchemaType.NUMBER,
+                        description: "Code line number where the review ends",
+                        nullable: false,
+                    },
+                    side: {
+                        type: SchemaType.STRING,
+                        description: "Side of the diff",
+                        nullable: false,
+                    },
+                    filename: {
+                        type: SchemaType.STRING,
+                        description: "Name of the file",
+                        nullable: false,
+                    },
+                    text: {
+                        type: SchemaType.STRING,
+                        description: "Main body of the suggestion",
+                        nullable: false,
+                    },
+                },
             },
         },
     },
 };
+
+// const schema = {
+//     type: SchemaType.ARRAY,
+//     description: "Pull request review",
+//     items: {
+//         type: SchemaType.OBJECT,
+//         properties: {
+//             from_line: {
+//                 type: SchemaType.NUMBER,
+//                 description: "code line number where the review starts",
+//                 nullable: false,
+//             },
+//             to_line: {
+//                 type: SchemaType.NUMBER,
+//                 description: "code line number where the review ends",
+//                 nullable: false,
+//             },
+//             side: {
+//                 type: SchemaType.STRING,
+//                 description: "side of the diff",
+//                 nullable: false,
+//             },
+//             filename: {
+//                 type: SchemaType.STRING,
+//                 description: "name of the file",
+//                 nullable: false,
+//             },
+//             text: {
+//                 type: SchemaType.STRING,
+//                 description: "main body of the suggestion",
+//                 nullable: false,
+//             },
+//         },
+//     },
+// };
 
 const safetySettings = [
     {
@@ -122,12 +115,13 @@ const safetySettings = [
     },
 ];
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
     model: "gemini-1.5-pro",
     safetySettings: safetySettings,
     generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: schema,
+        responseSchema: GEMINI_OUTPUT_SCHEMA,
     },
 });
 
@@ -162,32 +156,7 @@ async function run() {
     }
 
     info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
-    const diff = shell
-        .exec(
-            `git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
-match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
-    left=a[1]
-    ll=length(a[2])
-    right=a[3]
-    rl=length(a[4])
-}
-/^(---|\\+\\+\\+|[^-+ ])/{ print;next }
-{ line=substr($0,2) }
-/^[-]/{ printf "-%"ll"s %"rl"s:%s\\n",left++,""     ,line;next }
-/^[+]/{ printf "+%"ll"s %"rl"s:%s\\n",""    ,right++,line;next }
-        { printf " %"ll"s %"rl"s:%s\\n",left++,right++,line }
-'`
-        )
-        .toString();
-    // const { data: diff } = await octokit.repos.compareCommits({
-    //     owner: context.repo.owner,
-    //     repo: context.repo.repo,
-    //     base: baseCommitHash,
-    //     head: headCommitHash,
-    //     mediaType: {
-    //         format: "diff",
-    //     },
-    // });
+    const diff = commitsDiff(baseCommitHash, headCommitHash);
     info(`Diff: ${diff}\n\n`);
 
     let review;
@@ -208,8 +177,9 @@ match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
         // info(`Complete Diff: ${completeDiff}\n\n`);
 
         const result = await model.generateContentStream([
-            `Here is a diff for a pull request in a project that uses node.js. 
-Kindly review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
+            `Here is a diff for a pull request in a project that uses node.js.
+Kindly review the diff and create a summary of all the changes that are part of this PR.
+Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
 The lines that start with a + sign are the added lines
@@ -230,7 +200,8 @@ The lines with a , are unmodified`,
     } else {
         const result = await model.generateContentStream([
             `Here is a diff for a pull request in a project that uses node.js. 
-Kindly review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
+Kindly review the diff and create a summary of all the changes that are part of this PR.
+Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
 The lines that start with a + sign are the added lines
@@ -251,7 +222,7 @@ The lines with a , are unmodified`,
     }
 
     // Add the summary as a general comment
-    // const summary = `AI Review Summary\n\n${review.summary}\n\n[Last reviewed commit: ${headCommitHash}]`;
+    const summary = `AI Review Summary\n\n${review.summary}\n\n[Last reviewed commit: ${headCommitHash}]`;
     // if (summaryComment) {
     //     await octokit.issues.updateComment({
     //         owner: context.repo.owner,
@@ -260,16 +231,16 @@ The lines with a , are unmodified`,
     //         body: summary,
     //     });
     // } else {
-    //     await octokit.issues.createComment({
-    //         owner: context.repo.owner,
-    //         repo: context.repo.repo,
-    //         issue_number: context.payload.pull_request.number,
-    //         body: summary,
-    //     });
+    await octokit.issues.createComment({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        issue_number: context.payload.pull_request.number,
+        body: summary,
+    });
     // }
 
     // Add line-by-line comments
-    for (const comment of review) {
+    for (const comment of review.suggestions) {
         let requestData = {
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -288,6 +259,8 @@ The lines with a , are unmodified`,
         await octokit.pulls.createReviewComment(requestData);
     }
 }
+
+run();
 
 async function getAllCommitIds(context) {
     const allCommits = [];
@@ -311,4 +284,22 @@ async function getAllCommitIds(context) {
     return allCommits;
 }
 
-run();
+function commitsDiff(baseCommitHash, headCommitHash) {
+    shell
+        .exec(
+            `git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
+match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
+    left=a[1]
+    ll=length(a[2])
+    right=a[3]
+    rl=length(a[4])
+}
+/^(---|\\+\\+\\+|[^-+ ])/{ print;next }
+{ line=substr($0,2) }
+/^[-]/{ printf "-%"ll"s %"rl"s:%s\\n",left++,""     ,line;next }
+/^[+]/{ printf "+%"ll"s %"rl"s:%s\\n",""    ,right++,line;next }
+        { printf " %"ll"s %"rl"s:%s\\n",left++,right++,line }
+'`
+        )
+        .toString();
+}
