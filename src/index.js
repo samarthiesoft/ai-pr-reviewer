@@ -159,7 +159,7 @@ async function run() {
             pull_number: context.payload.pull_request.number,
             body: comment.text,
             commit_id: headCommitHash,
-            path: comment.filename,
+            path: comment.filename.replace(/^\/+|\/$/g),
             side: comment.side,
             line: comment.to_line,
         };
