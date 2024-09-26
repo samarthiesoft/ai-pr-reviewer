@@ -9,7 +9,7 @@ const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
 const shell = require("shelljs");
 
-shell.cd(process.env.GITHUB_WORKSPACE);
+shell.cd(process.env.GIT_REPO_PATH);
 
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
