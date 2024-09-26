@@ -115,14 +115,18 @@ async function run() {
     info(`PR Diff: ${prDiff}\n\n`);
 
     info(`Gemini response - Summary:\n`);
-    let summary = "AI Review Summary\n\n";
+    let summary = "";
     const summaryStream = await getSummaryStream(prDiff);
     for await (const chunk of summaryStream.stream) {
         const chunkText = chunk.text().toString();
         summary += chunkText;
         info(chunkText);
     }
-    summary += `\n\n[Last reviewed commit: ${headCommitHash}]`;
+    if (summary.trim() == "") {
+        warning("Empty summary. Stopping");
+        return;
+    }
+    summary = `AI Review Summary\n\n${summary}\n\n[Last reviewed commit: ${headCommitHash}]`;
 
     info(`Gemini response - Suggestions:\n`);
     let suggestionsJson = "";
@@ -168,7 +172,11 @@ async function run() {
             requestData.start_line = comment.from_line;
         }
 
-        await octokit.pulls.createReviewComment(requestData);
+        try {
+            await octokit.pulls.createReviewComment(requestData);
+        } catch (error) {
+            warning(error.toString());
+        }
     }
 }
 
