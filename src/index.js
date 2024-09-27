@@ -71,11 +71,11 @@ const GEMINI_SAFETY_SETTINGS = [
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const summaryModel = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
+    model: "gemini-1.5-flash",
     safetySettings: GEMINI_SAFETY_SETTINGS,
 });
 const suggestionsModel = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
+    model: "gemini-1.5-flash",
     safetySettings: GEMINI_SAFETY_SETTINGS,
     generationConfig: {
         responseMimeType: "application/json",
