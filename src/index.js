@@ -40,7 +40,6 @@ const GEMINI_OUTPUT_SCHEMA = {
                 type: SchemaType.STRING,
                 description: "name of the file",
                 nullable: false,
-                man,
             },
             text: {
                 type: SchemaType.STRING,
