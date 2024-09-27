@@ -241,7 +241,7 @@ async function getSuggestionsStream(diff) {
 Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
-For the same suggestion occuring in multiple places, avoid duplication and create a single suggestion mentioning all the occurances in the same suggestion.
+Strictly avoid repeating suggestions. Mention all the occurrences in one suggestion.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
