@@ -106,10 +106,11 @@ async function run() {
     }
 
     info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
-    const diff = commitsDiff(baseCommitHash, headCommitHash);
-    info(`Diff: ${diff}\n\n`);
-
-    const prDiff = commitsDiff(
+    const fileDiffs = getFileDiffsWithLineNumbers(
+        baseCommitHash,
+        headCommitHash
+    );
+    const prDiff = getDiffBetweenCommits(
         context.payload.pull_request.base.sha,
         headCommitHash
     );
@@ -131,7 +132,7 @@ async function run() {
 
     info(`Gemini response - Suggestions:\n`);
     let suggestionsJson = "";
-    const suggestionsStream = await getSuggestionsStream(diff);
+    const suggestionsStream = await getSuggestionsStream(fileDiffs);
     for await (const chunk of suggestionsStream.stream) {
         const chunkText = chunk.text().toString();
         suggestionsJson += chunkText;
@@ -205,24 +206,35 @@ async function getAllCommitIds(context) {
     return allCommits;
 }
 
-function commitsDiff(baseCommitHash, headCommitHash) {
-    return shell
-        .exec(
-            `cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash} | gawk '
-match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
-    left=a[1]
-    ll=length(a[2])
-    right=a[3]
-    rl=length(a[4])
+function getDiffBetweenCommits(baseCommitHash, headCommitHash) {
+    shell.exec(`git diff -W ${baseCommitHash}..${headCommitHash}`).toString();
 }
-/^(---|\\+\\+\\+|[^-+ ])/{ print;next }
-{ line=substr($0,2) }
-/^[-]/{ printf "-%"ll"s %"rl"s:%s\\n",left++,""     ,line;next }
-/^[+]/{ printf "+%"ll"s %"rl"s:%s\\n",""    ,right++,line;next }
-        { printf " %"ll"s %"rl"s:%s\\n",left++,right++,line }
-'`
-        )
-        .toString();
+
+function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
+    const fileNames = shell
+        .exec(`git diff --name-only ${baseCommitHash}..${headCommitHash}`)
+        .toString()
+        .split("\n");
+
+    return fileNames.map((fileName) =>
+        shell
+            .exec(
+                `git diff -W ${baseCommitHash}..${headCommitHash} ${fileName} | gawk '
+                match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
+                    left=a[1]
+                    ll=length(a[2])
+                    right=a[3]
+                    rl=length(a[4])
+                }
+                /^(---|\\+\\+\\+|[^-+ ])/{ print;next }
+                { line=substr($0,2) }
+                /^[-]/{ printf "-%"ll"s %"rl"s:%s\\n",left++,""     ,line;next }
+                /^[+]/{ printf "+%"ll"s %"rl"s:%s\\n",""    ,right++,line;next }
+                        { printf " %"ll"s %"rl"s:%s\\n",left++,right++,line }
+                '`
+            )
+            .toString()
+    );
 }
 
 async function getSummaryStream(diff) {
@@ -236,9 +248,9 @@ The lines with a , are unmodified`,
     ]);
 }
 
-async function getSuggestionsStream(diff) {
+async function getSuggestionsStream(fileDiffs) {
     return await suggestionsModel.generateContentStream([
-        `Here is a diff for a pull request in a project. 
+        `Here are individual file diffs for a pull request in a project. 
 Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
@@ -248,7 +260,7 @@ The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified
 Each modified line starts with a number which represents the line number in the actual file.`,
-        diff,
+        ...fileDiffs,
     ]);
 }
 
