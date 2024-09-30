@@ -9,8 +9,6 @@ const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
 const shell = require("shelljs");
 
-shell.cd(process.env.GIT_REPO_PATH);
-
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
 });
@@ -263,6 +261,7 @@ Review the code and suggest changes that will make the code more maintanable, le
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
 Strictly avoid repeating suggestions and all suggestions should strictly contain a unique text body.
+Generate a maximum of 25 suggestions.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified
