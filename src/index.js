@@ -217,7 +217,7 @@ function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
             `cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`,
             { silent: true }
         )
-        .toString()
+        .stdout
         .split("\n");
 
     return fileNames.map((fileName) =>
@@ -238,7 +238,7 @@ function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
                 '`,
                 { silent: true }
             )
-            .toString()
+            .stdout
     );
 }
 
