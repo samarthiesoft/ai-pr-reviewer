@@ -207,19 +207,19 @@ async function getAllCommitIds(context) {
 }
 
 function getDiffBetweenCommits(baseCommitHash, headCommitHash) {
-    shell.exec(`git diff -W ${baseCommitHash}..${headCommitHash}`).toString();
+    shell.exec(`cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash}`).toString();
 }
 
 function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
     const fileNames = shell
-        .exec(`git diff --name-only ${baseCommitHash}..${headCommitHash}`)
+        .exec(`cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`)
         .toString()
         .split("\n");
 
     return fileNames.map((fileName) =>
         shell
             .exec(
-                `git diff -W ${baseCommitHash}..${headCommitHash} ${fileName} | gawk '
+                `cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash} ${fileName} | gawk '
                 match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
                     left=a[1]
                     ll=length(a[2])
