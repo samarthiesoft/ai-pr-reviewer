@@ -207,12 +207,18 @@ async function getAllCommitIds(context) {
 }
 
 function getDiffBetweenCommits(baseCommitHash, headCommitHash) {
-    shell.exec(`cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash}`).toString();
+    return shell
+        .exec(
+            `cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash}`
+        )
+        .toString();
 }
 
 function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
     const fileNames = shell
-        .exec(`cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`)
+        .exec(
+            `cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`
+        )
         .toString()
         .split("\n");
 
