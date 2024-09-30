@@ -246,7 +246,8 @@ Strictly avoid repeating suggestions and all suggestions should strictly contain
 Only give a maximum of 10 suggestions.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
-The lines with a , are unmodified`,
+The lines with a , are unmodified
+Each modified line starts with a number which represents the line number in the actual file.`,
         diff,
     ]);
 }
