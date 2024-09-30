@@ -214,7 +214,8 @@ function getDiffBetweenCommits(baseCommitHash, headCommitHash) {
 function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
     const fileNames = shell
         .exec(
-            `cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`
+            `cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`,
+            { silent: true }
         )
         .toString()
         .split("\n");
@@ -234,7 +235,8 @@ function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
                 /^[-]/{ printf "-%"ll"s %"rl"s:%s\\n",left++,""     ,line;next }
                 /^[+]/{ printf "+%"ll"s %"rl"s:%s\\n",""    ,right++,line;next }
                         { printf " %"ll"s %"rl"s:%s\\n",left++,right++,line }
-                '`
+                '`,
+                { silent: true }
             )
             .toString()
     );
@@ -258,7 +260,7 @@ Review the code and suggest changes that will make the code more maintanable, le
 While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
 For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
 Strictly avoid repeating suggestions and all suggestions should strictly contain a unique text body.
-Generate a maximum of 25 suggestions.
+Generate a maximum of 10 suggestions.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified
