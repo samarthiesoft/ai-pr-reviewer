@@ -112,9 +112,6 @@ async function run() {
         context.payload.pull_request.base.sha,
         headCommitHash
     );
-    if (process.env.DEBUG == "true") {
-        info(`PR Diff: ${prDiff}\n\n`);
-    }
 
     info(`Gemini response - Summary:\n`);
     let summary = "";
