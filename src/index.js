@@ -192,7 +192,7 @@ async function getAllCommitIds(context) {
 }
 
 function getDiffBetweenCommits(baseCommitHash, headCommitHash) {
-    return shell.exec(`cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash}`).stdout;
+    return shell.exec(`cd ${process.env.GIT_REPO_PATH} && git diff ${baseCommitHash}..${headCommitHash}`).stdout;
 }
 
 function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
