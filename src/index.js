@@ -104,9 +104,9 @@ async function run() {
     info(`Diff for suggestions (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
     const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash);
 
-    let context;
+    let additionalContext;
     if (fs.existsSync(".github/.reviewcontext")) {
-        context = fs.readFileSync(".github/.reviewcontext", { encoding: "utf-8" });
+        additionalContext = fs.readFileSync(".github/.reviewcontext", { encoding: "utf-8" });
         info(`Additional context found:\n${context}`);
     } else {
         info("Additional context not found. Skipping");
@@ -114,7 +114,7 @@ async function run() {
 
     info(`Gemini response - Summary:\n`);
     let summary = "";
-    const summaryStream = await getSummaryStream(prDiff, context);
+    const summaryStream = await getSummaryStream(prDiff, additionalContext);
     for await (const chunk of summaryStream.stream) {
         const chunkText = chunk.text().toString();
         summary += chunkText;
@@ -128,7 +128,7 @@ async function run() {
 
     info(`Gemini response - Suggestions:\n`);
     let suggestionsJson = "";
-    const suggestionsStream = await getSuggestionsStream(fileDiffs, context);
+    const suggestionsStream = await getSuggestionsStream(fileDiffs, additionalContext);
     for await (const chunk of suggestionsStream.stream) {
         const chunkText = chunk.text().toString();
         suggestionsJson += chunkText;
@@ -229,7 +229,7 @@ function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
     );
 }
 
-async function getSummaryStream(diff, context) {
+async function getSummaryStream(diff, additionalContext) {
     const prompt = [
         `Here is a diff for a pull request in a project. 
 Review the code and create a summary that includes a high level overview of all the changes made in the PR.
@@ -237,15 +237,15 @@ The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
     ];
-    if (context) {
-        prompt.push(context);
+    if (additionalContext) {
+        prompt.push(additionalContext);
     }
     prompt.push(diff);
 
     return await summaryModel.generateContentStream(prompt);
 }
 
-async function getSuggestionsStream(fileDiffs, context) {
+async function getSuggestionsStream(fileDiffs, additionalContext) {
     const prompt = [
         `Here are individual file diffs for a pull request in a project. 
     Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
@@ -258,8 +258,8 @@ async function getSuggestionsStream(fileDiffs, context) {
     The lines with a , are unmodified
     Each modified line starts with a number which represents the line number in the actual file.`,
     ];
-    if (context) {
-        prompt.push(context);
+    if (additionalContext) {
+        prompt.push(additionalContext);
     }
 
     return await suggestionsModel.generateContentStream([...prompt, ...fileDiffs]);
