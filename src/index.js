@@ -107,7 +107,7 @@ async function run() {
     let additionalContext;
     if (fs.existsSync(".github/.reviewcontext")) {
         additionalContext = fs.readFileSync(".github/.reviewcontext", { encoding: "utf-8" }).toString();
-        info(`Additional context found:\n${context}`);
+        info(`Additional context found:\n${additionalContext}`);
     } else {
         info("Additional context not found. Skipping");
     }
