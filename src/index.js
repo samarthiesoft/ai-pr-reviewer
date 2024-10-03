@@ -3,6 +3,7 @@ const { GoogleGenerativeAI, SchemaType, HarmCategory, HarmBlockThreshold } = req
 const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
 const shell = require("shelljs");
+const fs = require("fs");
 // shell.config.silent = true;
 
 const pullRequest = context.payload.pull_request;
@@ -103,9 +104,17 @@ async function run() {
     info(`Diff for suggestions (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
     const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash);
 
+    let context;
+    if (fs.existsSync(".github/.reviewcontext")) {
+        context = fs.readFileSync(".github/.reviewcontext", { encoding: "utf-8" });
+        info(`Additional context found:\n${context}`);
+    } else {
+        info("Additional context not found. Skipping");
+    }
+
     info(`Gemini response - Summary:\n`);
     let summary = "";
-    const summaryStream = await getSummaryStream(prDiff);
+    const summaryStream = await getSummaryStream(prDiff, context);
     for await (const chunk of summaryStream.stream) {
         const chunkText = chunk.text().toString();
         summary += chunkText;
@@ -119,7 +128,7 @@ async function run() {
 
     info(`Gemini response - Suggestions:\n`);
     let suggestionsJson = "";
-    const suggestionsStream = await getSuggestionsStream(fileDiffs);
+    const suggestionsStream = await getSuggestionsStream(fileDiffs, context);
     for await (const chunk of suggestionsStream.stream) {
         const chunkText = chunk.text().toString();
         suggestionsJson += chunkText;
@@ -220,31 +229,40 @@ function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
     );
 }
 
-async function getSummaryStream(diff) {
-    return await summaryModel.generateContentStream([
+async function getSummaryStream(diff, context) {
+    const prompt = [
         `Here is a diff for a pull request in a project. 
 Review the code and create a summary that includes a high level overview of all the changes made in the PR.
 The lines that start with a + sign are the added lines
 The lines that start with a - sign are deleted lines
 The lines with a , are unmodified`,
-        diff,
-    ]);
+    ];
+    if (context) {
+        prompt.push(context);
+    }
+    prompt.push(diff);
+
+    return await summaryModel.generateContentStream(prompt);
 }
 
-async function getSuggestionsStream(fileDiffs) {
-    return await suggestionsModel.generateContentStream([
+async function getSuggestionsStream(fileDiffs, context) {
+    const prompt = [
         `Here are individual file diffs for a pull request in a project. 
-Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
-While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
-For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
-Strictly avoid repeating suggestions and all suggestions should strictly contain a unique text body.
-Generate a maximum of 10 suggestions.
-The lines that start with a + sign are the added lines
-The lines that start with a - sign are deleted lines
-The lines with a , are unmodified
-Each modified line starts with a number which represents the line number in the actual file.`,
-        ...fileDiffs,
-    ]);
+    Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
+    While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
+    For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
+    Strictly avoid repeating suggestions and all suggestions should strictly contain a unique text body.
+    Generate a maximum of 10 suggestions.
+    The lines that start with a + sign are the added lines
+    The lines that start with a - sign are deleted lines
+    The lines with a , are unmodified
+    Each modified line starts with a number which represents the line number in the actual file.`,
+    ];
+    if (context) {
+        prompt.push(context);
+    }
+
+    return await suggestionsModel.generateContentStream([...prompt, ...fileDiffs]);
 }
 
 async function getExistingSummaryComment(context) {
