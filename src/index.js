@@ -3,7 +3,7 @@ const { GoogleGenerativeAI, SchemaType, HarmCategory, HarmBlockThreshold } = req
 const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
 const shell = require("shelljs");
-shell.config.silent = true;
+// shell.config.silent = true;
 
 const pullRequest = context.payload.pull_request;
 const octokit = new Octokit({
