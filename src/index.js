@@ -81,7 +81,6 @@ const suggestionsModel = genAI.getGenerativeModel({
 
 async function run() {
     const summaryComment = await getExistingSummaryComment(context);
-    info(`Existing comment:\n${summaryComment?.body}\n\n`);
 
     // Find the base and head commits for the review
     let baseCommitHash = pullRequest.base.sha;
@@ -98,10 +97,10 @@ async function run() {
         return;
     }
 
-    info(`Diff for summary between (PR base..Latest): ${pullRequest.base.sha}..${headCommitHash}`);
+    info(`Diff for summary (PR base..Latest): ${pullRequest.base.sha}..${headCommitHash}`);
     const prDiff = getDiffBetweenCommits(pullRequest.base.sha, headCommitHash);
 
-    info(`Diff for suggestions between (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
+    info(`Diff for suggestions (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
     const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash);
 
     info(`Gemini response - Summary:\n`);
