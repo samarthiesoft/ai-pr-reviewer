@@ -97,13 +97,13 @@ async function run() {
         return;
     }
 
-    info(`\n\nDiff for summary (PR base..Latest): ${pullRequest.base.sha}..${headCommitHash}`);
+    info(`Diff for summary (PR base..Latest): ${pullRequest.base.sha}..${headCommitHash}`);
     const prDiff = getDiffBetweenCommits(pullRequest.base.sha, headCommitHash);
 
-    info(`\n\nDiff for suggestions (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
+    info(`Diff for suggestions (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
     const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash);
 
-    info(`\n\nGemini response - Summary:\n`);
+    info(`Gemini response - Summary:\n`);
     let summary = "";
     const summaryStream = await getSummaryStream(prDiff);
     for await (const chunk of summaryStream.stream) {
@@ -117,7 +117,7 @@ async function run() {
     }
     summary = `AI Review Summary\n\n${summary}\n\n[Last reviewed commit: ${headCommitHash}]`;
 
-    info(`\n\nGemini response - Suggestions:\n`);
+    info(`Gemini response - Suggestions:\n`);
     let suggestionsJson = "";
     const suggestionsStream = await getSuggestionsStream(fileDiffs);
     for await (const chunk of suggestionsStream.stream) {
