@@ -1,14 +1,11 @@
 const { Octokit } = require("@octokit/rest");
-const {
-    GoogleGenerativeAI,
-    SchemaType,
-    HarmCategory,
-    HarmBlockThreshold,
-} = require("@google/generative-ai");
+const { GoogleGenerativeAI, SchemaType, HarmCategory, HarmBlockThreshold } = require("@google/generative-ai");
 const { context } = require("@actions/github");
 const { info, warning } = require("@actions/core");
 const shell = require("shelljs");
+shell.config.silent = true;
 
+const pullRequest = context.payload.pull_request;
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
 });
@@ -83,15 +80,13 @@ const suggestionsModel = genAI.getGenerativeModel({
 });
 
 async function run() {
-    const summaryComment = await findSummaryComment(context);
-    info(`Existing comment: ${summaryComment}\n\n`);
+    const summaryComment = await getExistingSummaryComment(context);
+    info(`Existing comment:\n${summaryComment?.body}\n\n`);
 
     // Find the base and head commits for the review
-    let baseCommitHash = context.payload.pull_request.base.sha;
+    let baseCommitHash = pullRequest.base.sha;
     if (summaryComment) {
-        const matches = summaryComment.body.match(
-            /\[Last reviewed commit: (.*)\]/
-        );
+        const matches = summaryComment.body.match(/\[Last reviewed commit: (.*)\]/);
         if (matches && matches.length > 1) {
             baseCommitHash = matches[1];
         }
@@ -103,15 +98,11 @@ async function run() {
         return;
     }
 
-    info(`Diff between: ${baseCommitHash}..${headCommitHash}`);
-    const fileDiffs = getFileDiffsWithLineNumbers(
-        baseCommitHash,
-        headCommitHash
-    );
-    const prDiff = getDiffBetweenCommits(
-        context.payload.pull_request.base.sha,
-        headCommitHash
-    );
+    info(`Diff for summary between (PR base..Latest): ${pullRequest.base.sha}..${headCommitHash}`);
+    const prDiff = getDiffBetweenCommits(pullRequest.base.sha, headCommitHash);
+
+    info(`Diff for suggestions between (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
+    const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash);
 
     info(`Gemini response - Summary:\n`);
     let summary = "";
@@ -149,7 +140,7 @@ async function run() {
         await octokit.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: context.payload.pull_request.number,
+            issue_number: pullRequest.number,
             body: summary,
         });
     }
@@ -159,7 +150,7 @@ async function run() {
         let requestData = {
             owner: context.repo.owner,
             repo: context.repo.repo,
-            pull_number: context.payload.pull_request.number,
+            pull_number: pullRequest.number,
             body: comment.text,
             commit_id: headCommitHash,
             path: comment.filename.replace(/^\/+|\/$/g),
@@ -185,44 +176,34 @@ async function getAllCommitIds(context) {
     const allCommits = [];
     let page = 1;
     let commits;
-    if (context && context.payload && context.payload.pull_request != null) {
-        do {
-            commits = await octokit.pulls.listCommits({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.payload.pull_request.number,
-                per_page: 100,
-                page,
-            });
+    do {
+        commits = await octokit.pulls.listCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pullRequest.number,
+            per_page: 100,
+            page,
+        });
 
-            allCommits.push(...commits.data.map((commit) => commit.sha));
-            page++;
-        } while (commits.data.length > 0);
-    }
+        allCommits.push(...commits.data.map((commit) => commit.sha));
+        page++;
+    } while (commits.data.length > 0);
 
     return allCommits;
 }
 
 function getDiffBetweenCommits(baseCommitHash, headCommitHash) {
-    return shell
-        .exec(
-            `cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash}`
-        )
-        .toString();
+    return shell.exec(`cd ${process.env.GIT_REPO_PATH} && git diff -W ${baseCommitHash}..${headCommitHash}`).stdout;
 }
 
 function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
     const fileNames = shell
-        .exec(
-            `cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`,
-            { silent: true }
-        )
-        .stdout
-        .split("\n");
+        .exec(`cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`)
+        .stdout.split("\n");
 
-    return fileNames.map((fileName) =>
-        shell
-            .exec(
+    return fileNames.map(
+        (fileName) =>
+            shell.exec(
                 `cd ${process.env.GIT_REPO_PATH} && git diff ${baseCommitHash}..${headCommitHash} ${fileName} | gawk '
                 match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
                     left=a[1]
@@ -235,10 +216,8 @@ function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
                 /^[-]/{ printf "-%"ll"s %"rl"s:%s\\n",left++,""     ,line;next }
                 /^[+]/{ printf "+%"ll"s %"rl"s:%s\\n",""    ,right++,line;next }
                         { printf " %"ll"s %"rl"s:%s\\n",left++,right++,line }
-                '`,
-                { silent: true }
-            )
-            .stdout
+                '`
+            ).stdout
     );
 }
 
@@ -269,14 +248,12 @@ Each modified line starts with a number which represents the line number in the 
     ]);
 }
 
-async function findSummaryComment(context) {
+async function getExistingSummaryComment(context) {
     const { data: issueComments } = await octokit.issues.listComments({
         owner: context.repo.owner,
         repo: context.repo.repo,
-        issue_number: context.payload.pull_request.number,
+        issue_number: pullRequest.number,
         per_page: 25,
     });
-    return issueComments.findLast((issueComment) =>
-        issueComment.body.startsWith("AI Review Summary")
-    );
+    return issueComments.findLast((issueComment) => issueComment.body.startsWith("AI Review Summary"));
 }
