@@ -252,6 +252,7 @@ async function getSuggestionsStream(fileDiffs, additionalContext) {
     While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
     For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
     Strictly avoid repeating suggestions and all suggestions should strictly contain a unique text body.
+    Add code examples in suggestions that include code changes. 
     Generate a maximum of 10 suggestions.
     The lines that start with a + sign are the added lines
     The lines that start with a - sign are deleted lines
