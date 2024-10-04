@@ -247,7 +247,7 @@ The lines with a , are unmodified`,
 
 async function getSuggestionsStream(fileDiffs, additionalContext) {
     const prompt = [
-        `You are given individual file diffs for a pull request in a project. Review the code diff and provide detailed suggestions for improving code maintainability, reducing potential errors, and identifying bugs. Your response should include the following:
+        `You are given individual file diffs for a pull request in a project. Review the code diff and provide detailed critical suggestions for improving code maintainability, reducing potential errors, and identifying bugs. Your response should include the following:
 
 Line Reference: Mention the exact from_line, to_line, and filename where your suggestion applies.
 Side Reference: Specify the side of the diff. Use LEFT for deletions and RIGHT for additions.
