@@ -247,17 +247,19 @@ The lines with a , are unmodified`,
 
 async function getSuggestionsStream(fileDiffs, additionalContext) {
     const prompt = [
-        `Here are individual file diffs for a pull request in a project. 
-    Review the code and suggest changes that will make the code more maintanable, less error prone while also checking for possible bugs and issues that could arise from the changes in the diff.
-    While suggesting the changes kindly mention the from_line and to_line and the filename for the supplied code that you are suggesting the change against.
-    For each suggestion mention the side. Can be LEFT or RIGHT. Use LEFT for deletions and RIGHT for additions.
-    Strictly avoid repeating suggestions and all suggestions should strictly contain a unique text body.
-    Add code examples in suggestions that include code changes. 
-    Generate a maximum of 10 suggestions.
-    The lines that start with a + sign are the added lines
-    The lines that start with a - sign are deleted lines
-    The lines with a , are unmodified
-    Each modified line starts with a number which represents the line number in the actual file.`,
+        `You are given individual file diffs for a pull request in a project. Review the code diff and provide detailed suggestions for improving code maintainability, reducing potential errors, and identifying bugs. Your response should include the following:
+
+Line Reference: Mention the exact from_line, to_line, and filename where your suggestion applies.
+Side Reference: Specify the side of the diff. Use LEFT for deletions and RIGHT for additions.
+Unique Suggestions: Ensure each suggestion is unique and relevant to the corresponding code. Strictly avoid repeating any suggestions.
+Code Examples: For suggestions that involve code changes, provide concrete examples showing how to improve the code.
+Limit Suggestions: Provide a maximum of 10 suggestions.
+
+Diff Conventions:
+Lines starting with + represent additions.
+Lines starting with - represent deletions.
+Lines with , represent unmodified content.
+Each line is prefixed with a line number representing its position in the actual file.`,
     ];
     if (additionalContext) {
         prompt.push(additionalContext);
