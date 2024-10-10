@@ -102,7 +102,9 @@ async function run() {
     const prDiff = getDiffBetweenCommits(pullRequest.base.sha, headCommitHash);
 
     info(`Diff for suggestions (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
-    const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash);
+    const ignoreFiles = getIgnoreFiles();
+    info(`Ignoring files in .reviewignore:\n${ignoreFiles.toString()}`);
+    const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash, ignoreFiles);
 
     let additionalContext;
     if (fs.existsSync(".github/.reviewcontext")) {
@@ -204,10 +206,13 @@ function getDiffBetweenCommits(baseCommitHash, headCommitHash) {
     return shell.exec(`cd ${process.env.GIT_REPO_PATH} && git diff ${baseCommitHash}..${headCommitHash}`).stdout;
 }
 
-function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash) {
+function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash, ignoreFiles) {
     const fileNames = shell
         .exec(`cd ${process.env.GIT_REPO_PATH} && git diff --name-only ${baseCommitHash}..${headCommitHash}`)
-        .stdout.split("\n");
+        .stdout.trim()
+        .split("\n")
+        .map((f) => f.trim())
+        .filter((f) => !ignoreFiles.includes(f));
 
     return fileNames.map(
         (fileName) =>
@@ -276,4 +281,12 @@ async function getExistingSummaryComment(context) {
         per_page: 25,
     });
     return issueComments.findLast((issueComment) => issueComment.body.startsWith("AI Review Summary"));
+}
+
+function getIgnoreFiles() {
+    return fs
+        .readFileSync(".reviewignore", { encoding: "utf-8" })
+        .trim()
+        .split("\n")
+        .map((f) => f.trim());
 }
