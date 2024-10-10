@@ -103,6 +103,7 @@ async function run() {
 
     info(`Diff for suggestions (Last reviewed..Latest): ${baseCommitHash}..${headCommitHash}`);
     const ignoreFiles = getIgnoreFiles();
+    ignoreFiles.push(".reviewignore");
     info(`Ignoring files in .reviewignore:\n${ignoreFiles.toString()}`);
     const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash, ignoreFiles);
 
