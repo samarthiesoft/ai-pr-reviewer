@@ -81,7 +81,6 @@ const suggestionsModel = genAI.getGenerativeModel({
 });
 
 async function run() {
-    warning("This is the develop branch");
     const summaryComment = await getExistingSummaryComment(context);
 
     // Find the base and head commits for the review
