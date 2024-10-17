@@ -282,7 +282,10 @@ Regarding diffs which only have deletions: Try not to comment on those. Only add
         prompt.push(
             `Since this an updated pull request, you are also being provided the previous comments as well so that you know the current status of the pull request ${JSON.stringify(
                 existingComments
-            )} `
+            )} 
+            
+            Below are the diffs which are present in the pull request:
+            `
         );
     }
 
