@@ -278,7 +278,11 @@ Regarding diffs which only have deletions: Try not to comment on those. Only add
     }
     if (existingComments.length) {
         info(`We have found ${existingComments.length} existing comments`)
-        prompt.push(`Since this an updated pull request, you are also being provided the previous comments as well so that you know the current status of the pull request ${JSON.stringify(existingComments)} `)
+        prompt.push(`Since this an updated pull request, you are also being provided the previous comments as well so that you know the current status of the pull request ${JSON.stringify(existingComments)} 
+        
+        
+        Below are the diffs that are present in the pull request: 
+        `)
     }
     
     return await suggestionsModel.generateContentStream([...prompt, ...fileDiffs]);
