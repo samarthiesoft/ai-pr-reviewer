@@ -81,7 +81,6 @@ const suggestionsModel = genAI.getGenerativeModel({
 });
 
 async function run() {
-
     const comments = await getExistingComments(context);
 
     const summaryComment = comments.findLast((issueComment) => issueComment.body.startsWith("AI Review Summary"));
@@ -112,7 +111,9 @@ async function run() {
 
     let additionalContext;
     if (fs.existsSync(`${process.env.GITHUB_WORKSPACE}/.github/.reviewcontext`)) {
-        additionalContext = fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/.github/.reviewcontext`, { encoding: "utf-8" }).toString();
+        additionalContext = fs
+            .readFileSync(`${process.env.GITHUB_WORKSPACE}/.github/.reviewcontext`, { encoding: "utf-8" })
+            .toString();
         info(`Additional context found:\n${additionalContext}`);
     } else {
         info("Additional context not found. Skipping");
@@ -277,10 +278,14 @@ Regarding diffs which only have deletions: Try not to comment on those. Only add
         prompt.push(additionalContext);
     }
     if (existingComments.length) {
-        info(`We have found ${existingComments.length} existing comments`)
-        prompt.push(`Since this an updated pull request, you are also being provided the previous comments as well so that you know the current status of the pull request ${JSON.stringify(existingComments)} `)
+        info(`We have found ${existingComments.length} existing comments`);
+        prompt.push(
+            `Since this an updated pull request, you are also being provided the previous comments as well so that you know the current status of the pull request ${JSON.stringify(
+                existingComments
+            )} `
+        );
     }
-    
+
     return await suggestionsModel.generateContentStream([...prompt, ...fileDiffs]);
 }
 
@@ -296,9 +301,11 @@ async function getExistingComments(context) {
 }
 
 function getIgnoreFiles() {
-    return fs
-        .readFileSync(`${process.env.GITHUB_WORKSPACE}/.reviewignore`, { encoding: "utf-8" })
-        .trim()
-        .split("\n")
-        .map((f) => f.trim());
+    return fs.existsSync(`${process.env.GITHUB_WORKSPACE}/.reviewignore`)
+        ? fs
+              .readFileSync(`${process.env.GITHUB_WORKSPACE}/.reviewignore`, { encoding: "utf-8" })
+              .trim()
+              .split("\n")
+              .map((f) => f.trim())
+        : [];
 }
