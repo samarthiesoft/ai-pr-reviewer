@@ -81,7 +81,10 @@ const suggestionsModel = genAI.getGenerativeModel({
 });
 
 async function run() {
-    const summaryComment = await getExistingSummaryComment(context);
+
+    const comments = await getExistingComments(context);
+
+    const summaryComment = comments.findLast((issueComment) => issueComment.body.startsWith("AI Review Summary"));
 
     // Find the base and head commits for the review
     let baseCommitHash = pullRequest.base.sha;
@@ -108,8 +111,8 @@ async function run() {
     const fileDiffs = getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash, ignoreFiles);
 
     let additionalContext;
-    if (fs.existsSync(".github/.reviewcontext")) {
-        additionalContext = fs.readFileSync(".github/.reviewcontext", { encoding: "utf-8" }).toString();
+    if (fs.existsSync(`${process.env.GITHUB_WORKSPACE}/.github/.reviewcontext`)) {
+        additionalContext = fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/.github/.reviewcontext`, { encoding: "utf-8" }).toString();
         info(`Additional context found:\n${additionalContext}`);
     } else {
         info("Additional context not found. Skipping");
@@ -131,7 +134,7 @@ async function run() {
 
     info(`Gemini response - Suggestions:\n`);
     let suggestionsJson = "";
-    const suggestionsStream = await getSuggestionsStream(fileDiffs, additionalContext);
+    const suggestionsStream = await getSuggestionsStream(fileDiffs, additionalContext, comments);
     for await (const chunk of suggestionsStream.stream) {
         const chunkText = chunk.text().toString();
         suggestionsJson += chunkText;
@@ -251,7 +254,7 @@ The lines with a , are unmodified`,
     return await summaryModel.generateContentStream(prompt);
 }
 
-async function getSuggestionsStream(fileDiffs, additionalContext) {
+async function getSuggestionsStream(fileDiffs, additionalContext, existingComments) {
     const prompt = [
         `You are given individual file diffs for a pull request in a project. Review the code diff and provide detailed critical suggestions for improving code maintainability, reducing potential errors, and identifying bugs. Your response should include the following:
 
@@ -265,28 +268,36 @@ Diff Conventions:
 Lines starting with + represent additions.
 Lines starting with - represent deletions.
 Lines with , represent unmodified content.
-Each line is prefixed with a line number representing its position in the actual file.`,
+Each line is prefixed with a line number representing its position in the actual file.
+
+Regarding diffs which only have deletions: Try not to comment on those. Only add a review for it if the funtionality might be hampered due to that deletion. 
+`,
     ];
     if (additionalContext) {
         prompt.push(additionalContext);
     }
-
+    if (existingComments.length) {
+        info(`We have found ${existingComments.length} existing comments`)
+        prompt.push(`Since this an updated pull request, you are also being provided the previous comments as well so that you know the current status of the pull request ${JSON.stringify(existingComments)} `)
+    }
+    
     return await suggestionsModel.generateContentStream([...prompt, ...fileDiffs]);
 }
 
-async function getExistingSummaryComment(context) {
+async function getExistingComments(context) {
     const { data: issueComments } = await octokit.issues.listComments({
         owner: context.repo.owner,
         repo: context.repo.repo,
         issue_number: pullRequest.number,
         per_page: 25,
     });
-    return issueComments.findLast((issueComment) => issueComment.body.startsWith("AI Review Summary"));
+    // return issueComments.findLast((issueComment) => issueComment.body.startsWith("AI Review Summary"));
+    return issueComments;
 }
 
 function getIgnoreFiles() {
     return fs
-        .readFileSync(".reviewignore", { encoding: "utf-8" })
+        .readFileSync(`${process.env.GITHUB_WORKSPACE}/.reviewignore`, { encoding: "utf-8" })
         .trim()
         .split("\n")
         .map((f) => f.trim());
