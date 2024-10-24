@@ -257,7 +257,9 @@ The lines with a , are unmodified`,
 
 async function getSuggestionsStream(fileDiffs, additionalContext, existingComments) {
     const prompt = [
-        `You are given individual the following file diffs for a pull request in a project. Review the code diffs and provide detailed critical suggestions for improving code maintainability, reducing potential errors, and identifying bugs. Your response should include the following:
+        `You are given individual the following file diffs for a pull request in a project. Review the code diffs and provide detailed critical suggestions for improving code maintainability, reducing potential errors, and identifying bugs.`,
+        ...fileDiffs,
+        `Your response should include the following:
 
 Line Reference: Mention the exact from_line, to_line, and filename where your suggestion applies.
 Side Reference: Specify the side of the diff. Use LEFT for deletions and RIGHT for additions.
@@ -273,20 +275,19 @@ Each line is prefixed with a line number representing its position in the actual
 
 If a diff only has deletions add a review for it only if a funtionality might be hampered due to that deletion and do not add a review otherwise. 
 `,
-        ...fileDiffs,
     ];
-    // if (additionalContext) {
-    //     prompt.push(`Here is some additional context for the project: \n${additionalContext}`);
-    // }
-    // if (existingComments.length) {
-    //     info(`We have found ${existingComments.length} existing comments`);
-    //     info(existingComments[0]);
-    //     prompt.push(
-    //         `Here are the existing comments on the pull request in JSON format for more context:\n${JSON.stringify(
-    //             existingComments
-    //         )}`
-    //     );
-    // }
+    if (additionalContext) {
+        prompt.push(`Here is some additional context for the project: \n${additionalContext}`);
+    }
+    if (existingComments.length) {
+        info(`We have found ${existingComments.length} existing comments`);
+        info(existingComments[0]);
+        prompt.push(
+            `Here are the existing comments on the pull request in JSON format for more context:\n${JSON.stringify(
+                existingComments
+            )}`
+        );
+    }
 
     return await suggestionsModel.generateContentStream(prompt);
 }
