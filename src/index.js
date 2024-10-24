@@ -222,7 +222,7 @@ function getFileDiffsWithLineNumbers(baseCommitHash, headCommitHash, ignoreFiles
     return fileNames.map(
         (fileName) =>
             shell.exec(
-                `cd ${process.env.GIT_REPO_PATH} && git diff ${baseCommitHash}..${headCommitHash} -- ${fileName} | gawk '
+                `cd ${process.env.GIT_REPO_PATH} && git diff ${baseCommitHash}..${headCommitHash} -- "${fileName}" | gawk '
                 match($0,"^@@ -([0-9]+),([0-9]+) [+]([0-9]+),([0-9]+) @@",a){
                     left=a[1]
                     ll=length(a[2])
@@ -257,7 +257,9 @@ The lines with a , are unmodified`,
 
 async function getSuggestionsStream(fileDiffs, additionalContext, existingComments) {
     const prompt = [
-        `You are given individual file diffs for a pull request in a project. Review the code diff and provide detailed critical suggestions for improving code maintainability, reducing potential errors, and identifying bugs. Your response should include the following:
+        `You are given individual the following file diffs for a pull request in a project. Review the code diffs and provide detailed critical suggestions for improving code maintainability, reducing potential errors, and identifying bugs.`,
+        fileDiffs.join("\n\n"),
+        `Your response should include the following:
 
 Line Reference: Mention the exact from_line, to_line, and filename where your suggestion applies.
 Side Reference: Specify the side of the diff. Use LEFT for deletions and RIGHT for additions.
@@ -271,25 +273,23 @@ Lines starting with - represent deletions.
 Lines with , represent unmodified content.
 Each line is prefixed with a line number representing its position in the actual file.
 
-Regarding diffs which only have deletions: Try not to comment on those. Only add a review for it if the funtionality might be hampered due to that deletion. 
+If a diff only has deletions add a review for it only if a funtionality might be hampered due to that deletion and do not add a review otherwise. 
 `,
     ];
     if (additionalContext) {
-        prompt.push(additionalContext);
+        prompt.push(`Here is some additional context for the project: \n${additionalContext}`);
     }
     if (existingComments.length) {
         info(`We have found ${existingComments.length} existing comments`);
+        info(existingComments[0]);
         prompt.push(
-            `Since this an updated pull request, you are also being provided the previous comments as well so that you know the current status of the pull request ${JSON.stringify(
+            `Here are the existing comments on the pull request in JSON format for more context:\n${JSON.stringify(
                 existingComments
-            )} 
-            
-            Below are the diffs which are present in the pull request:
-            `
+            )}`
         );
     }
 
-    return await suggestionsModel.generateContentStream([...prompt, ...fileDiffs]);
+    return await suggestionsModel.generateContentStream(prompt);
 }
 
 async function getExistingComments(context) {
